@@ -3,10 +3,11 @@ module MultiDispatch
   def self.included(a_class)
     a_class.extend MultiDispatchClassMethods
     a_class.extend MultiDispatchAccessories
-    a_class.include MultiDispatchAccessories
+    a_class.send :include, MultiDispatchAccessories
   end
 
   def method_missing method, *args
+    print "\nMetodo: #{method}"
     method_missing_acc method, inst_methods, *args
   end
 
@@ -19,9 +20,7 @@ module MultiDispatch
   # end
 
   def respond_to_missing? method, *args
-    # print ("Responde normal? #{self.respond? method, inst_methods} y por otros medios?#{padre.instance_respond_to? method}")
-    hola = padre.instance_respond_to? method
-    respond? method, inst_methods || (padre.instance_respond_to? method)
+    respond? method, inst_methods or (padre.inst_methods.has_key? method)
   end
 
   def inst_methods
@@ -35,10 +34,29 @@ end
 
 module MultiDispatchAccessories
 
+
+  # def method_missing_acc method, hash, *args
+  #     finder = hash.find{|elem| elem.first == method}
+  #     if finder.nil? then
+  #       behaviour = padre.get_match method, *args
+  #       behaviour.call(args)
+  #     else
+  #       finder = finder.last
+  #       call_behaviour finder, method, *args
+  #     end
+  # end
+
+
   def method_missing_acc method, hash, *args
     if respond_to? method.to_sym then
-      finder = hash.find{|elem| elem.first == method}.last
+      finder = hash.find{|elem| elem.first == method}
+      if finder.nil? then
+        behaviour = padre.get_match method, *args
+        self.instance_exec(args, &behaviour)
+      else
+      finder = finder.last
       call_behaviour finder, method, *args
+      end
     else
       raise NoMethodError
     end
@@ -49,7 +67,11 @@ module MultiDispatchAccessories
     if behaviour.nil? then
       behaviour = padre.get_match method, *args
     end
-    behaviour.call(args)
+
+    self.define_singleton_method method, behaviour
+    self.send method, *args
+    # borrar metodo
+    # self.instance_exec(args, &behaviour)
   end
 
   def respond? method, hash
@@ -85,6 +107,15 @@ module MultiDispatchClassMethods
     method_missing_acc method, class_methods, *args
   end
 
+  # def method_missing method, *args
+  #   if respond_to? method then
+  #     method_missing_acc method, inst_methods, *args
+  #   else
+  #     super
+  #   end
+  # end
+
+
   def respond_to_missing? method, *args, &block
     respond? method, class_methods
   end
@@ -101,10 +132,10 @@ module MultiDispatchClassMethods
       if !behaviour.nil? then
         behaviour
       else
-        super
+        padre.get_match method, *args
       end
     else
-      super
+      padre.get_match method, *args
     end
   end
 

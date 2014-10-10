@@ -1,6 +1,13 @@
 require_relative '../../lib/MultiMethods/MultiDispatch'
+require_relative '../../lib/MultiMethods/MultiMethod'
 class StringUtils
-  include MultiDispatch
+  include MultiMethod
+
+  attr_accessor :atributo
+
+  def initialize
+    self.atributo = 2
+  end
 
   multimethod :concat do
     define_for [String, String] do |s1, s2|
@@ -72,6 +79,9 @@ class StringUtils
 end
 
 class SuperStringUtils < StringUtils
+  def concat5 s1,s2
+    s1+s2
+  end
 
   multimethod :concat5 do
     define_for [String, String] do |s1, s2|
@@ -86,6 +96,12 @@ class SuperStringUtils < StringUtils
 end
 
 class SuperSuperStringUtils < SuperStringUtils
+
+  multimethod :concat5 do
+    define_for [String, String] do |s1, s2|
+      super(s1,s2) * 3
+    end
+  end
 
 end
 
